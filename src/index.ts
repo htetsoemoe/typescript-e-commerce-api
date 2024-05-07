@@ -1,11 +1,10 @@
 import express, {Express, Request, Response} from 'express'
+import { PORT } from './secrets'
+import rootRouter from './routes'
 
 const app: Express = express()
-const PORT = 3500
 
-app.get('/', (req: Request, res: Response) => {
-    res.send("App is running")
-})
+app.use('/api', rootRouter)
 
 app.listen(PORT, () => {
     console.log(`App is running on port: ${PORT}`)
