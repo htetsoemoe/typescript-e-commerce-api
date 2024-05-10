@@ -1,8 +1,12 @@
-import {Request, Response} from 'express'
+import {Request, Response, NextFunction} from 'express'
 import { prismaClient } from '..'
 import {hashSync, compareSync} from 'bcrypt'
 import * as jwt from 'jsonwebtoken'
 import { JWT_SECRET } from '../secrets'
+import {BadRequestException} from '../exceptions/bad-request'
+import { ErrorCode } from '../exceptions/root'
+import { UnprocessableEntity } from '../exceptions/validation'
+import { SignUpSchema } from '../schema/users'
 
 type User = {
     id: number;
@@ -13,30 +17,31 @@ type User = {
     updatedAt: Date;
 } | null
 
-export const signUp = async (req: Request, res: Response) => {
-    const {name, email, password} = req.body
-
-    let user: User = await prismaClient.user.findFirst({
-        where: {
-            email: email
+export const signUp = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        // Firstly we need to validate user inputs with zod validation schema(SignUpSchema)
+        SignUpSchema.parse(req.body)
+        const {name, email, password} = req.body
+        let user: User = await prismaClient.user.findFirst({
+            where: {
+                email: email
+            }
+        })
+        if (user) {
+            return next(new BadRequestException("User already exists!", ErrorCode.USER_ALREADY_EXISTS))
         }
-    })
-
-    if (user) {
-        throw Error('User already exists!')
+        user = await prismaClient.user.create({
+            data: {
+                name,
+                email,
+                password: hashSync(password, 10)
+            }
+        })
+        const {password: pass, ...rest} = user
+        res.status(201).json(rest)
+    } catch (err: any) {
+        next(new UnprocessableEntity(err?.issues, "Unprocessable Entity", ErrorCode.UNPROCESSABLE_ENTITY))
     }
-
-    user = await prismaClient.user.create({
-        data: {
-            name,
-            email,
-            password: hashSync(password, 10)
-        }
-    })
-
-    const {password: pass, ...rest} = user
-
-    res.status(201).json(rest)
 }
 
 export const login = async (req: Request, res: Response) => {
