@@ -7,6 +7,7 @@ import {BadRequestException} from '../exceptions/bad-request'
 import { ErrorCode } from '../exceptions/root'
 import { UnprocessableEntity } from '../exceptions/validation'
 import { SignUpSchema } from '../schema/users'
+import { NotFoundException } from '../exceptions/not-found'
 
 type User = {
     id: number;
@@ -42,27 +43,24 @@ export const signUp = async (req: Request, res: Response, next: NextFunction) =>
 
 export const login = async (req: Request, res: Response) => {
     const {email, password} = req.body
-
     let user: User = await prismaClient.user.findFirst({
         where: {
             email
         }
     })
-    
-    if (!user) {
-        throw Error("User doesn't exist!")
-    }
 
+    if (!user) {
+        throw new NotFoundException("Incorrect Email", ErrorCode.USER_NOT_FOUND)
+    }
     if (!compareSync(password, user.password)) {
-        throw Error("Incorrect password!")
+        throw new BadRequestException("Incorrect Password", ErrorCode.INCORRECT_PASSWORD)
     }
 
     // Generate JWT Token
     const token = jwt.sign({
         userId: user.id
     }, JWT_SECRET)
-
-    const {password: pass, ...rest} = user
-
+    
+    const {password: pass, createdAt, updatedAt, ...rest} = user
     res.status(200).json({user: rest, token})
 }
