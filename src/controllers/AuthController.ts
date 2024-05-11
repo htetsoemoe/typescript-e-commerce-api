@@ -18,8 +18,7 @@ type User = {
 } | null
 
 export const signUp = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-        // Firstly we need to validate user inputs with zod validation schema(SignUpSchema)
+    // Firstly we need to validate user inputs with zod validation schema(SignUpSchema)
         SignUpSchema.parse(req.body)
         const {name, email, password} = req.body
         let user: User = await prismaClient.user.findFirst({
@@ -39,9 +38,6 @@ export const signUp = async (req: Request, res: Response, next: NextFunction) =>
         })
         const {password: pass, ...rest} = user
         res.status(201).json(rest)
-    } catch (err: any) {
-        next(new UnprocessableEntity(err?.issues, "Unprocessable Entity", ErrorCode.UNPROCESSABLE_ENTITY))
-    }
 }
 
 export const login = async (req: Request, res: Response) => {
