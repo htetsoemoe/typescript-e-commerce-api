@@ -9,20 +9,20 @@ import { UnprocessableEntity } from '../exceptions/validation'
 import { SignUpSchema } from '../schema/users'
 import { NotFoundException } from '../exceptions/not-found'
 
-type User = {
-    id: number;
-    name: string;
-    email: string;
-    password: string;
-    createdAt: Date;
-    updatedAt: Date;
-} | null
+// export type User = {
+//     id: number;
+//     name: string;
+//     email: string;
+//     password: string;
+//     createdAtUser: Date;
+//     updatedAt: Date;
+// } | null
 
 export const signUp = async (req: Request, res: Response, next: NextFunction) => {
     // Firstly we need to validate user inputs with zod validation schema(SignUpSchema)
         SignUpSchema.parse(req.body)
         const {name, email, password} = req.body
-        let user: User = await prismaClient.user.findFirst({
+        let user  = await prismaClient.user.findFirst({
             where: {
                 email: email
             }
@@ -41,9 +41,9 @@ export const signUp = async (req: Request, res: Response, next: NextFunction) =>
         res.status(201).json(rest)
 }
 
-export const login = async (req: Request, res: Response) => {
+export const login = async (req: Request, res: Response, next: NextFunction) => {
     const {email, password} = req.body
-    let user: User = await prismaClient.user.findFirst({
+    let user = await prismaClient.user.findFirst({
         where: {
             email
         }
@@ -63,4 +63,13 @@ export const login = async (req: Request, res: Response) => {
     
     const {password: pass, createdAt, updatedAt, ...rest} = user
     res.status(200).json({user: rest, token})
+}
+
+// /me  => Authorization controller
+export const me = async (req: Request, res: Response, next: NextFunction) => {
+    const {password: pass, ...rest} = req.user
+    res.status(200).json({
+        message: "Authorized User",
+        user: rest
+    })
 }
