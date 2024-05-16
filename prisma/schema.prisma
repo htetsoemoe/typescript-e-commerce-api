@@ -27,7 +27,24 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  addresses Address[] // onetomany relationship (One user can have many address)
+
   @@map("users")
+}
+
+model Address {
+  id        Int      @id @default(autoincrement())
+  lineOne   String
+  lineTwo   String?
+  city      String
+  country   String
+  pincode   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  User      User?    @relation(fields: [userId], references: [id])
+  userId    Int?
+
+  @@map("addresses")
 }
 
 model Product {
