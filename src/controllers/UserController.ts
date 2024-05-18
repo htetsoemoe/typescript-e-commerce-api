@@ -69,3 +69,11 @@ export const deleteAddress = async (req: Request, res: Response) => {
         throw new NotFoundException("Address Not Found!", ErrorCode.ADDRESS_NOT_FOUND)
     }
 }
+
+export const listUsers = async (req: Request, res: Response) => {
+    const users = await prismaClient.user.findMany({
+        skip: parseInt(req.query.skip as string) || 0,
+        take: 5
+    })
+    res.status(200).json(users)
+}
