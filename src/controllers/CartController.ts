@@ -20,24 +20,49 @@ export const addItemToCart = async (req: Request, res: Response) => {
         throw new NotFoundException("Product not found!", ErrorCode.PRODUCT_NOT_FOUND)
     }
 
-    // create a cartItem
-    let cartItem = await prismaClient.cartItem.create({
-        data: {
-            quantity: validateData.quantity,
-            user: {
-                connect: {
-                    id: parseInt(req.user.id)
-                }
-            },
-            product: {
-                connect: {
-                    id: product.id
-                }
-            }
+    // check a found product was already existed in as cartItem
+    const existedProduct = await prismaClient.cartItem.findFirst({
+        where: {
+            productId: product.id
         }
     })
 
-    res.status(201).json(cartItem)
+    // and we need to find there was already existed cartItem
+    const existedCartItem = await prismaClient.cartItem.findFirst({
+        where: {
+            productId: existedProduct?.id
+        }
+    })
+
+    // If there was already existed in cartItem, only need to be update product's quantity
+    if (existedProduct && existedCartItem) {
+        let onlyUpdatedProductQty = await prismaClient.cartItem.update({
+            where: {
+                id: existedCartItem?.id
+            },
+            data: {
+                quantity: existedProduct.quantity + 1
+            }
+        })
+        res.status(200).json(onlyUpdatedProductQty)
+    } else {    // OR create a cartItem
+        let cartItem = await prismaClient.cartItem.create({
+            data: {
+                quantity: validateData.quantity,
+                user: {
+                    connect: {
+                        id: parseInt(req.user.id)
+                    }
+                },
+                product: {
+                    connect: {
+                        id: product.id
+                    }
+                }
+            }
+        })
+        res.status(201).json(cartItem)
+    }
 }
 
 export const getCart = async (req: Request, res: Response) => {
