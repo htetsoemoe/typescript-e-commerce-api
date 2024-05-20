@@ -1,5 +1,5 @@
 import { Request, Response } from "express"
-import { CartItemSchema } from "../schema/cart"
+import { CartItemSchema, CartQuantitySchema } from "../schema/cart"
 import { Product } from "@prisma/client"
 import { NotFoundException } from "../exceptions/not-found"
 import { ErrorCode } from "../exceptions/root"
@@ -40,14 +40,39 @@ export const addItemToCart = async (req: Request, res: Response) => {
     res.status(201).json(cartItem)
 }
 
-export const deleteItemFromCart = async (req: Request, res: Response) => {
-    
+export const getCart = async (req: Request, res: Response) => {
+    const cartItems = await prismaClient.cartItem.findMany({
+        where: {
+            user: {
+                id: parseInt(req.user.id)
+            }
+        },
+        include: {
+            product: true
+        }
+    })
+    res.status(200).json(cartItems)
 }
 
 export const changeQuantity = async (req: Request, res: Response) => {
-    
+    const validateData = CartQuantitySchema.parse(req.body)
+
+    const updateCartProductQuantity = await prismaClient.cartItem.update({
+        where: {
+            id: parseInt(req.params.id) // cartItem's ID
+        },
+        data: {
+            quantity: validateData.quantity
+        }
+    })
+    res.status(200).json(updateCartProductQuantity)
 }
 
-export const getCart = async (req: Request, res: Response) => {
-    
+export const deleteItemFromCart = async (req: Request, res: Response) => {
+    const deletedCartItem = await prismaClient.cartItem.delete({
+        where: {
+            id: parseInt(req.params.id)
+        }
+    })
+    res.status(200).json(deletedCartItem)
 }
