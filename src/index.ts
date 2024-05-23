@@ -9,17 +9,24 @@ const app: Express = express()
 
 export const prismaClient = new PrismaClient({
     log: ['query']
+}).$extends({
+    result: {
+        address: {
+            formattedAddress: {
+                needs: {
+                    lineOne: true,
+                    lineTwo: true,
+                    city: true,
+                    country: true,
+                    pincode: true
+                },
+                compute: (addr) => {
+                    return `${addr.lineOne}, ${addr.lineTwo}, ${addr.city}, ${addr.country}-${addr.pincode}`
+                }
+            }
+        }
+    }
 })
-// .$extends({
-//     query: {
-//         user: {
-//             create({args, query}) {
-//                 args.data = SignUpSchema.parse(args.data)
-//                 return query(args)
-//             }
-//         }
-//     }
-// })
 
 app.use(express.json())
 app.use('/api', rootRouter)
