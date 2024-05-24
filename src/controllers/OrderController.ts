@@ -1,5 +1,7 @@
 import { Request, Response } from "express"
 import { prismaClient } from ".."
+import { NotFoundException } from "../exceptions/not-found"
+import { ErrorCode } from "../exceptions/root"
 
 export const createOrder = async (req: Request, res: Response) => {
     // 1. to create a transactions
@@ -76,13 +78,60 @@ export const createOrder = async (req: Request, res: Response) => {
 }
 
 export const listOrder = async (req: Request, res: Response) => {
-
+    const orders = await prismaClient.order.findMany({
+        where: {
+            userId: req.user.id
+        }
+    })
+    res.status(200).json(orders)
 }
 
 export const cancelOrder = async (req: Request, res: Response) => {
-
+    try {
+       const order = await prismaClient.order.update({
+            where: {
+                id: parseInt(req.params.id)
+            },
+            data: {
+                status: "CANCELLED",
+                events: {
+                    create: {
+                        status: "CANCELLED"
+                    }
+                }
+            }
+       }) 
+       res.status(200).json(order)
+    } catch (error) {
+        throw new NotFoundException("Order not found!", ErrorCode.ORDER_NOT_FOUND)
+    }
 }
 
 export const getOrderById = async (req: Request, res: Response) => {
+    try {
+        const order = await prismaClient.order.findFirstOrThrow({
+            where: {
+                id: parseInt(req.params.id)
+            },
+            include: {
+                products: true,
+                events: true
+            }
+        })
+        res.status(200).json(order)
+    } catch (error) {
+        throw new NotFoundException("Order not found!", ErrorCode.ORDER_NOT_FOUND)
+    }
+}
 
+export const listAllOrders = async (req: Request, res: Response) => {
+    res.status(200).json({message: "listAllOrder api route is working..."})
+}
+
+export const listUserOrders = async (req: Request, res: Response) => {
+    res.status(200).json({message: "listUserOrders api route is working..."})
+}
+
+export const changeStatus = async (req: Request, res: Response) => {
+    res.status(200).json({message: "changeStatus api route is working..."})
 }
