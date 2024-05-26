@@ -125,7 +125,21 @@ export const getOrderById = async (req: Request, res: Response) => {
 }
 
 export const listAllOrders = async (req: Request, res: Response) => {
-    res.status(200).json({message: "listAllOrder api route is working..."})
+    // we want to fetch a specific order status (PENDING, CANCELLED)
+    let whereClause = {}
+    const status = req.query.status
+    if (status) {
+        whereClause = {
+            status
+        }
+    }
+
+    const orders = await prismaClient.order.findMany({
+        where: whereClause,
+        skip: parseInt(req.query.skip as string) || 0,
+        take: 10
+    })
+    res.status(200).json(orders)
 }
 
 export const listUserOrders = async (req: Request, res: Response) => {
