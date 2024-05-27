@@ -143,9 +143,46 @@ export const listAllOrders = async (req: Request, res: Response) => {
 }
 
 export const listUserOrders = async (req: Request, res: Response) => {
-    res.status(200).json({message: "listUserOrders api route is working..."})
+    let whereClause: any = {
+        userId: parseInt(req.params.id)
+    }
+
+    const status = req.query.status
+    if (status) {
+        whereClause = {
+            ...whereClause,
+            status
+        }
+    }
+
+    const orders = await prismaClient.order.findMany({
+        where: whereClause,
+        skip: parseInt(req.query.skip as string) || 0,
+        take: 10
+    })
+    res.status(200).json(orders)
 }
 
 export const changeStatus = async (req: Request, res: Response) => {
-    res.status(200).json({message: "changeStatus api route is working..."})
+    return await prismaClient.$transaction(async (tx) => {
+        try {
+            const order = await tx.order.update({
+                where: {
+                    id: parseInt(req.params.id)
+                },
+                data: {
+                    status: req.body.status
+                }
+            })
+            await tx.orderEvent.create({
+                data: {
+                    orderId: order.id,
+                    status: req.body.status
+                }
+            })
+            res.status(200).json(order)
+        } catch (error) {
+            throw new NotFoundException("Order not found!", ErrorCode.ORDER_NOT_FOUND)
+        }
+    })
 }
